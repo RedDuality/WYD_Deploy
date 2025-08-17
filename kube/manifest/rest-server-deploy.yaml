@@ -1,4 +1,4 @@
-#rest-server-deploy.yaml
+# rest-server-deploy.yaml
 
 apiVersion: apps/v1
 kind: Deployment
@@ -43,8 +43,8 @@ spec:
                   key: MONGODB_APP_PASSWORD
             - name: DATABASE_NAME
               valueFrom:
-                secretKeyRef:
-                  name: wyd-credentials
+                configMapKeyRef:
+                  name: rest-server-config
                   key: DATABASE_NAME
 ---
 apiVersion: v1
@@ -58,4 +58,4 @@ spec:
     - protocol: TCP
       port: 8080
       targetPort: 80
-  type: LoadBalancer # Use this to expose the service outside the cluster
+  type: ClusterIP

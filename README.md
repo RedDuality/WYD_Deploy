@@ -93,7 +93,7 @@ Copy your files to the server. From your local machine, use scp to transfer your
 From the repo /kube folder, run
 
 ```bash
-scp -i '/path/to/keyfile' secrets.yaml mongodb-deploy.yaml rest-server-deploy.yaml deploy.sh root@<_server_ip>:~/
+scp -i '/path/to/keyfile' -r config manifests deploy.sh clear.sh root@<_server_ip>:~/
 ```
 ### 2. Run the deployment script. 
 
