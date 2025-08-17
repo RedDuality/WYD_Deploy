@@ -76,32 +76,8 @@ from Windows
 type '/path/to/server-name-github.pub' | ssh -i '/path/to/keyfile' root@188.245.90.55 "cat >> .ssh/authorized_keys"
 ```
 ---
-## 2. Configure the CI/CD Pipeline with GitHub Actions 🚀
 
-### 1. Store Secrets in GitHub
-
-The GitHub Actions workflow needs credentials to log into Docker Hub and your server. Store these securely in your GitHub repository's secrets.
-
-Go to your repo on GitHub -> Settings -> Secrets and variables -> Actions.\
-Click New repository secret for each of the following:
-
-* DOCKERHUB_USERNAME: The Docker Hub username.
-
-* DOCKERHUB_TOKEN: An access token from Docker Hub. (In Docker Hub: Account Settings -> Personal Access Token -> Generate new token, with Read and Write permissions).
-
- * SSH_PRIVATE_KEY: The contents of your private key file (~/.ssh/github_actions). Open the file and copy everything.
-
-* SSH_HOST: The server's IP address (e.g., 192.168.1.100).
-
-* SSH_USER: The username you use to log into your Debian server (e.g., root).
-
-* SUBMODULE_TOKEN: The token with repo scope to allow submodule fetching
-
-### 2. Create the GitHub Actions Workflow File
-In the project's root directory, create the folder structure and file: .github/workflows/deploy.yml.
-
----
-## 3. The Initial Manual Deployment 🎬
+## 2. The Initial Manual Deployment 🎬
 
 ### 0. Create the secrets.yaml
 
@@ -134,7 +110,31 @@ kubectl get all
 ```
 
 ---
+## 3. Configure the CI/CD Pipeline with GitHub Actions 🚀
 
+### 1. Store Secrets in GitHub
+
+The GitHub Actions workflow needs credentials to log into Docker Hub and your server. Store these securely in your GitHub repository's secrets.
+
+Go to your repo on GitHub -> Settings -> Secrets and variables -> Actions.\
+Click New repository secret for each of the following:
+
+* DOCKERHUB_USERNAME: The Docker Hub username.
+
+* DOCKERHUB_TOKEN: An access token from Docker Hub. (In Docker Hub: Account Settings -> Personal Access Token -> Generate new token, with Read and Write permissions).
+
+ * SSH_PRIVATE_KEY: The contents of your private key file (~/.ssh/github_actions). Open the file and copy everything.
+
+* SSH_HOST: The server's IP address (e.g., 192.168.1.100).
+
+* SSH_USER: The username you use to log into your Debian server (e.g., root).
+
+* SUBMODULE_TOKEN: The token with repo scope to allow submodule fetching
+
+### 2. Create the GitHub Actions Workflow File
+In the project's root directory, create the folder structure and file: .github/workflows/deploy.yml.
+
+---
 
 
 
