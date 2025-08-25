@@ -1,125 +1,81 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Load environment variables from config.env
-echo "Loading environment variables from config.env..."
-if [ -f "config/config.env" ]; then
-    set -a # Automatically export all variables
-    source config/config.env
-    set +a # Stop automatically exporting
+# --- Preflight: load env and check tools ---
+if [[ -f "config/config.env" ]]; then
+  set -a
+  source config/config.env
+  set +a
 else
-    echo "Error: config/config.env not found!"
-    exit 1
+  echo "❌ config/config.env not found"
+  exit 1
 fi
 
-# This script automates the deployment of your Kubernetes resources.
+: "${DOMAIN_NAME:?DOMAIN_NAME not set in config.env}"
+: "${LETSENCRYPT_EMAIL:?LETSENCRYPT_EMAIL not set in config.env}"
 
-# Step 1: Install Nginx Ingress Controller (with patch)
-echo "Installing Nginx Ingress Controller..."
+command -v kubectl >/dev/null || { echo "❌ kubectl not found"; exit 1; }
+command -v envsubst >/dev/null || { echo "❌ envsubst not found (install gettext-base)"; exit 1; }
+
+echo "✅ Using DOMAIN_NAME=${DOMAIN_NAME}"
+echo "✅ Using LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}"
+echo "ℹ️  Make sure Cloudflare is DNS Only (grey cloud) for ${DOMAIN_NAME} until the cert is issued."
+
+# --- 1) Install/update NGINX Ingress Controller ---
+echo "▶ Installing ingress-nginx (bare metal manifest)…"
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/baremetal/deploy.yaml
-echo "Done."
 
-# Wait for the Deployment to exist before patching
-echo "Waiting for Nginx Ingress Controller deployment to be created..."
-kubectl wait --for=condition=Available --timeout=300s deployment/ingress-nginx-controller -n ingress-nginx
+echo "▶ Waiting for ingress-nginx-controller to be Available…"
+kubectl wait --for=condition=Available --timeout=300s -n ingress-nginx deploy/ingress-nginx-controller
 
-# Apply the patch to add hostNetwork and hostPort
-echo "Patching Nginx Ingress Controller for bare-metal setup..."
-kubectl patch deployment ingress-nginx-controller -n ingress-nginx --patch "$(cat manifest/nginx-patch.yaml)"
-echo "Done."
+echo "▶ Patching ingress-nginx-controller for hostNetwork/hostPorts…"
+# Use strategic merge so lists merge by name keys (safe re-run)
+kubectl patch deploy/ingress-nginx-controller \
+  -n ingress-nginx \
+  --type=strategic \
+  --patch "$(cat manifest/nginx-patch.yaml)" || true
 
-# Step 2: Install Cert-Manager
-echo "Installing Cert-Manager..."
+# --- 2) Install/update cert-manager ---
+echo "▶ Installing cert-manager…"
 kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml
-echo "Done."
 
-# Step 3: Wait for foundational components to be ready
-echo "Waiting for foundational components to be ready..."
-kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager -n cert-manager
-kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-webhook -n cert-manager
-kubectl wait --for=condition=Available --timeout=300s deployment/cert-manager-cainjector -n cert-manager
-kubectl wait --for=condition=Available --timeout=300s deployment/ingress-nginx-controller -n ingress-nginx
+echo "▶ Waiting for cert-manager deployments to be Available…"
+kubectl wait --for=condition=Available --timeout=300s -n cert-manager deploy -l app.kubernetes.io/instance=cert-manager
 
-echo "Adding a short delay to allow webhook CA injection..."
+echo "⏳ Allowing webhook CA injection to settle…"
 sleep 20
 
-# Step 3.5: Wait for cert-manager-webhook certificate to be ready
-echo "Waiting for Cert-Manager webhook to be ready..."
-kubectl wait --for=jsonpath='{.data}' secret/cert-manager-webhook-ca --namespace=cert-manager --timeout=300s
-echo "Webhook CA secret is ready."
+# --- 3) Apply ClusterIssuer + Ingress with envsubst ---
+echo "▶ Applying ClusterIssuer and Ingress…"
+envsubst < manifest/clusterissuer-and-ingress.yaml | kubectl apply -f -
 
-# Step 4: Apply the Cert-Manager ClusterIssuer with the email from the env file.
-echo "Applying Cert-Manager ClusterIssuer with a retry loop..."
-max_retries=10
-retry_count=0
-success=false
-
-while [ $retry_count -lt $max_retries ]; do
-    if sed "s|<LETSENCRYPT_EMAIL>|$LETSENCRYPT_EMAIL|g" manifest/cluster-issuer.yaml | kubectl apply -f -; then
-        echo "ClusterIssuer applied successfully."
-        success=true
-        break
-    else
-        echo "Attempt $((retry_count + 1)) failed. Retrying in 10 seconds..."
-        sleep 10
-        retry_count=$((retry_count + 1))
-    fi
-done
-
-if [ "$success" = false ]; then
-    echo "Failed to apply ClusterIssuer after $max_retries retries. Exiting."
+# --- 4) Wait for certificate, then enable HTTPS redirects ---
+echo "▶ Waiting for Certificate to be Ready…"
+kubectl wait \
+  --for=jsonpath='{.status.conditions[?(@.type=="Ready")].status}'=True \
+  certificate/rest-server-tls-secret \
+  --timeout=300s || {
+    echo "❌ Certificate not Ready in time. Check challenges: kubectl describe certificate/rest-server-tls-secret"
     exit 1
-fi
-echo "Done."
+  }
 
-# Step 5: Apply the Ingress with the domain from the env file.
-echo "Applying Ingress with domain name..."
-sed "s|<DOMAIN_NAME>|$DOMAIN_NAME|g" manifest/ingress.yaml | kubectl apply -f -
-echo "Done."
+echo "▶ Enabling SSL redirects on the Ingress…"
+kubectl annotate ingress rest-server-ingress \
+  nginx.ingress.kubernetes.io/ssl-redirect="true" \
+  nginx.ingress.kubernetes.io/force-ssl-redirect="true" \
+  --overwrite
 
-# Step 6: Applying secrets and configuration
-echo "Applying secrets and configuration..."
+echo "✅ HTTPS is enabled. Test: https://${DOMAIN_NAME}"
+echo "ℹ️  You may now switch Cloudflare to Proxy (orange cloud) if desired."
+
 kubectl apply -f config/secrets.yaml
 kubectl apply -f config/rest-server-config.yaml
-echo "Done."
 
-# Step 6.5: Wait for certificate to be issued and then enable SSL redirects
-echo "Waiting for certificate to be ready before enabling SSL redirects..."
-max_retries_cert=10
-retry_count_cert=0
-cert_ready=false
-
-while [ $retry_count_cert -lt $max_retries_cert ]; do
-    if kubectl get certificate rest-server-tls-secret -o=jsonpath='{.status.conditions[?(@.type=="Ready")].status}' | grep -q "True"; then
-        echo "Certificate is ready. Enabling SSL redirects."
-        kubectl annotate ingress rest-server-ingress nginx.ingress.kubernetes.io/ssl-redirect="true" --overwrite
-        kubectl annotate ingress rest-server-ingress nginx.ingress.kubernetes.io/force-ssl-redirect="true" --overwrite
-        cert_ready=true
-        break
-    else
-        echo "Certificate not ready yet. Attempt $((retry_count_cert + 1)) of $max_retries_cert. Retrying in 10 seconds..."
-        sleep 10
-        retry_count_cert=$((retry_count_cert + 1))
-    fi
-done
-
-if [ "$cert_ready" = false ]; then
-    echo "Certificate did not become ready after $max_retries_cert retries. Proceeding without SSL redirects."
-fi
-echo "Done."
-
-# Step 7: Applying application resources
-echo "Applying MongoDB resources with initContainer..."
-
-# Delete PVC if exists to force reinitialization
-#kubectl delete pvc mongodb-pvc --ignore-not-found
-
+# --- Deploy MongoDB ---
 kubectl apply -f manifest/mongodb-deploy.yaml
+kubectl wait --for=condition=Available --timeout=300s deploy/mongodb-deployment
 
-echo "Waiting for MongoDB deployment to be ready..."
-kubectl wait --for=condition=Available deployment/mongodb-deployment --timeout=300s
-
-echo "Applying rest-server deployment..."
+# --- Deploy REST server ---
 kubectl apply -f manifest/rest-server-deploy.yaml
 
-echo "All components deployed successfully! 🚀"
+echo "✅ Deployment completed successfully."

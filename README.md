@@ -6,7 +6,7 @@
 ## 0. Connect via ssh
 
 ```bash
-ssh -i '/path/to/keyfile' root@<server_ip>
+ssh -i '/path/to/keyfile' <user>@<server_ip>
 ```
 
 ## 1. Prepare the VM
@@ -69,11 +69,11 @@ ssh-keygen -t ed25519 -C "server-name-github-actions-key"
 Run this from the local machine.\
 from linux
 ```bash
-ssh-copy-id -i ~/.ssh/server-name-github.pub root@<server_ip>
+ssh-copy-id -i ~/.ssh/server-name-github.pub <user>@<server_ip>
 ```
 from Windows
 ```bash
-type '/path/to/server-name-github.pub' | ssh -i '/path/to/keyfile' root@188.245.90.55 "cat >> .ssh/authorized_keys"
+type '/path/to/server-name-github.pub' | ssh -i '/path/to/keyfile' <user>@<server_ip> "cat >> .ssh/authorized_keys"
 ```
 ---
 

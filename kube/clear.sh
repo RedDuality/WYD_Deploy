@@ -1,29 +1,28 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# This script deletes all deployed Kubernetes resources.
-echo "Deleting all resources..."
+echo "🗑️  Deleting all Kubernetes resources..."
 
-# Delete deployments
-echo "Deleting application deployments"
-kubectl delete -f manifest/rest-server-deploy.yaml
-kubectl delete -f manifest/mongodb-deploy.yaml
+# --- 1) Application workloads ---
+echo "▶ Deleting application deployments..."
+kubectl delete -f manifest/rest-server-deploy.yaml --ignore-not-found
+kubectl delete -f manifest/mongodb-deploy.yaml --ignore-not-found
 
-# Delete configuration and secrets
-echo "Deleting configuration and secrets..."
-kubectl delete -f config/rest-server-config.yaml
-kubectl delete -f config/secrets.yaml
+# --- 2) Configurations and secrets ---
+echo "▶ Deleting configuration and secrets..."
+kubectl delete -f config/rest-server-config.yaml --ignore-not-found
+kubectl delete -f config/secrets.yaml --ignore-not-found
 
-# Delete ingress and cluster issuer
-echo "Deleting ingress and cluster issuer..."
-kubectl delete -f manifest/ingress.yaml
-kubectl delete -f manifest/cluster-issuer.yaml
+# --- 3) Ingress + ClusterIssuer (combined file) ---
+echo "▶ Deleting Ingress and ClusterIssuer..."
+kubectl delete -f manifest/clusterissuer-and-ingress.yaml --ignore-not-found
 
-# Delete Cert-Manager
-echo "Deleting Cert-Manager..."
-kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.2/cert-manager.yaml
+# --- 4) cert-manager ---
+echo "▶ Deleting cert-manager..."
+kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml --ignore-not-found
 
-# Delete Nginx Ingress Controller
-echo "Deleting Nginx Ingress Controller..."
-kubectl delete -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/cloud/deploy.yaml
+# --- 5) NGINX Ingress Controller (bare metal provider) ---
+echo "▶ Deleting NGINX Ingress Controller..."
+kubectl delete -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/baremetal/deploy.yaml --ignore-not-found
 
-echo "All components deleted successfully! 🗑️"
+echo "✅ All components deleted (resources that didn’t exist were skipped)."
