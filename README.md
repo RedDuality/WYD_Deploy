@@ -79,10 +79,10 @@ type '/path/to/server-name-github.pub' | ssh -i '/path/to/keyfile' root@188.245.
 
 ## 2. The Initial Manual Deployment 🎬
 
-### 0. Create the secrets.yaml
-
-Copy secrets-blueprint.yaml into a new file secrets.yaml.
-Then modify the variables.
+### 0. Configure the environment variables
+Inside congif,
+  1. Copy secrets-blueprint.yaml into a new secrets.yaml file. Then modify the variables.
+  2. Configure config.env and rest-server-config.yaml files
 
 ### 1. Copy the deplyment files
 
@@ -93,7 +93,7 @@ Copy your files to the server. From your local machine, use scp to transfer your
 From the repo /kube folder, run
 
 ```bash
-scp -i '/path/to/keyfile' -r config manifests deploy.sh clear.sh root@<_server_ip>:~/
+scp -i '/path/to/keyfile' -r config manifest deploy.sh clear.sh root@<_server_ip>:~/
 ```
 ### 2. Run the deployment script. 
 
@@ -104,9 +104,15 @@ SSH into the server and run deploy.sh.
 chmod +x deploy.sh
 ./deploy.sh
 ```
+
+if there are problems with the https connection, the domain settings should be(initially, at secret sharing phase), 
+with proxy status as "dns only" and "always use https" as disabled.
+
+
 After this script finishes, the entire application stack should be running on the server. You can verify this with 
 ```bash
 kubectl get all
+kubectl get pods -A -w
 ```
 
 ---

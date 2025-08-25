@@ -46,6 +46,18 @@ spec:
                 configMapKeyRef:
                   name: rest-server-config
                   key: DATABASE_NAME
+#          livenessProbe:
+ #           httpGet:
+  #            path: /
+   #           port: 80
+    #        initialDelaySeconds: 15
+     #       periodSeconds: 20
+      #    readinessProbe:
+       #     httpGet:
+        #      path: /
+         #     port: 80
+          #  initialDelaySeconds: 5
+           # periodSeconds: 10
 ---
 apiVersion: v1
 kind: Service
@@ -56,6 +68,6 @@ spec:
     app: rest-server
   ports:
     - protocol: TCP
-      port: 8080
+      port: 80
       targetPort: 80
   type: ClusterIP

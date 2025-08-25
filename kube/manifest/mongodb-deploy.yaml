@@ -12,7 +12,7 @@ spec:
     requests:
       storage: 4Gi
 ---
-# The Deployment for the MongoDB pod.
+# MongoDB Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -43,12 +43,21 @@ spec:
                 secretKeyRef:
                   name: wyd-credentials
                   key: MONGO_INITDB_ROOT_PASSWORD
-            # The DATABASE_NAME is now properly pulled from the ConfigMap
             - name: DATABASE_NAME
               valueFrom:
                 configMapKeyRef:
                   name: rest-server-config
                   key: DATABASE_NAME
+            - name: MONGODB_APP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: wyd-credentials
+                  key: MONGODB_APP_USER
+            - name: MONGODB_APP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wyd-credentials
+                  key: MONGODB_APP_PASSWORD
           volumeMounts:
             - name: mongodb-data
               mountPath: /data/db
@@ -56,6 +65,16 @@ spec:
               mountPath: /docker-entrypoint-initdb.d/mongo-init.js
               subPath: mongo-init.js
               readOnly: true
+          livenessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          readinessProbe:
+            tcpSocket:
+              port: 27017
+            initialDelaySeconds: 15
+            periodSeconds: 10
       volumes:
         - name: mongodb-data
           persistentVolumeClaim:
@@ -64,7 +83,7 @@ spec:
           configMap:
             name: mongo-init-cm
 ---
-# The Service for MongoDB
+# MongoDB Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -77,14 +96,13 @@ spec:
       port: 27017
       targetPort: 27017
 ---
-# The ConfigMap containing the initialization script for MongoDB.
+# ConfigMap containing mongo-init.js
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: mongo-init-cm
 data:
   mongo-init.js: |
-    # The script now correctly uses the environment variable
     db = db.getSiblingDB('admin');
     print('Creating application user for database: ' + process.env.DATABASE_NAME);
     db.createUser({
@@ -95,7 +113,6 @@ data:
         { role: "readWrite", db: process.env.DATABASE_NAME }
       ]
     });
-    print('Switching to database ' + process.env.DATABASE_NAME + ' and creating it.');
     db = db.getSiblingDB(process.env.DATABASE_NAME);
     db.createCollection('init_collection');
     print('✅ MongoDB initialization complete.');
