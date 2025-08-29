@@ -1,5 +1,1 @@
-#where it should stay
-kube/config/secrets.yaml
-#you never know
-kube/secrets.yaml
-kube/manifest/secrets.yaml
+deploy/rest-server/config/secrets.yaml

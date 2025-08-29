@@ -28,7 +28,7 @@ sudo usermod -aG docker $USER
 ```
 Log out and log back in for this change to take effect
 
-### 1. Install k3s.io
+### 2. Install k3s.io
 
 Download and run the k3s installation script
 
@@ -37,7 +37,22 @@ curl -sfL https://get.k3s.io | sh -
 ```
 The installer automatically sets up a service to run k3s on boot.
 
-### 2. Configure kubectl Access
+### 3. Install helm
+
+on linux(apt):
+
+```bash
+curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | sudo tee /usr/share/keyrings/helm.gpg > /dev/null
+
+sudo apt-get install apt-transport-https --yes
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | sudo tee /etc/apt/sources.list.d/helm-stable-debian.list
+
+sudo apt-get update
+sudo apt-get install helm
+```
+
+### 4. Configure kubectl Access
 
 Create a .kube directory in your home folder
 ```bash
@@ -55,7 +70,7 @@ Test if you can connect to the cluster
 kubectl get nodes
 ```
 
-### 3. Set up SSH Key-Based Authentication
+### 5. Set up SSH Key-Based Authentication
 1. On your local machine (or any machine you want to generate the key from), create a new SSH key pair:
 
 ```bash
@@ -79,6 +94,12 @@ type '/path/to/server-name-github.pub' | ssh -i '/path/to/keyfile' <user>@<serve
 
 ## 2. The Initial Manual Deployment 🎬
 
+### 0. Prerequisites
+
+You need a domain and a mail for let's encrypt.
+
+the domain should be proxied by your provider.
+https alys off and ssl tls encryption on full strict
 ### 0. Configure the environment variables
 Inside congif,
   1. Copy secrets-blueprint.yaml into a new secrets.yaml file. Then modify the variables.
@@ -93,7 +114,7 @@ Copy your files to the server. From your local machine, use scp to transfer your
 From the repo /kube folder, run
 
 ```bash
-scp -i '/path/to/keyfile' -r config manifest deploy.sh clear.sh root@<_server_ip>:~/
+scp -i '/path/to/keyfile' -r config manifest deploy.sh clear.sh root@<_server_ip>:~/deploy
 ```
 ### 2. Run the deployment script. 
 
@@ -101,12 +122,10 @@ SSH into the server and run deploy.sh.
 
 ```bash
 # Once on the server
+cd deploy
 chmod +x deploy.sh
 ./deploy.sh
 ```
-
-if there are problems with the https connection, the domain settings should be(initially, at secret sharing phase), 
-with proxy status as "dns only" and "always use https" as disabled.
 
 
 After this script finishes, the entire application stack should be running on the server. You can verify this with 
@@ -129,7 +148,7 @@ Click New repository secret for each of the following:
 
 * DOCKERHUB_TOKEN: An access token from Docker Hub. (In Docker Hub: Account Settings -> Personal Access Token -> Generate new token, with Read and Write permissions).
 
- * SSH_PRIVATE_KEY: The contents of your private key file (~/.ssh/github_actions). Open the file and copy everything.
+* SSH_PRIVATE_KEY: The contents of your private key file created in passage 1.4 (~/.ssh/github_actions). Open the file and copy everything.
 
 * SSH_HOST: The server's IP address (e.g., 192.168.1.100).
 
@@ -148,18 +167,7 @@ In the project's root directory, create the folder structure and file: .github/w
 
 ## 🔒 Firewall Configuration
 
-### 1. Enable UFW
-
-```bash
-sudo ufw enable
-```
-
-### 2. Allow Essential Services
-
-```bash
-sudo ufw allow ssh
-sudo ufw allow 8080/tcp
-```
+Firewall should allow ports 22, 80, 443, 
 
 ### 3. 📡 MongoDB Access via SSH Tunnel
 
