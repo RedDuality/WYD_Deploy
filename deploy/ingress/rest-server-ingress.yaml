@@ -6,8 +6,14 @@ metadata:
   name: main-ingress
   namespace: default
   annotations:
-    kubernetes.io/ingress.class: "nginx"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - "${DOMAIN_NAME}"
+    secretName: rest-server-tls
   rules:
   - host: "${DOMAIN_NAME}"
     http:

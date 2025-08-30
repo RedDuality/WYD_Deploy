@@ -1,1 +1,2 @@
-deploy/rest-server/config/secrets.yaml
+secrets.yaml
+secret.yaml

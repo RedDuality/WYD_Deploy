@@ -1,4 +1,4 @@
-#cluster-issuer.yaml
+# cluster-issuer.yaml
 
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -6,11 +6,11 @@ metadata:
   name: letsencrypt-prod
 spec:
   acme:
-    email: ${LETSENCRYPT_EMAIL}
     server: https://acme-v02.api.letsencrypt.org/directory
+    email: ${LETSENCRYPT_EMAIL}
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
     - http01:
         ingress:
-          class: nginx
+          ingressClassName: nginx
