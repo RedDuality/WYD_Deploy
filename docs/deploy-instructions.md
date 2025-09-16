@@ -91,7 +91,7 @@ You should see **one node** (your machine).
 
 You need:
 
-* ✅ A working **domain name**
+* ✅ A working **domain name** of A type
 * ✅ A **valid email** (for Let’s Encrypt SSL)
 * ✅ The **server IP address**
 
@@ -101,18 +101,17 @@ You need:
 
 ### 2.1 Configure Environment Variables
 
-On your **local repo copy**:
+On your **local repo copy**:\
+ Go to `config` folder
 
 1. **REST Server**
 
-   * Go to `deploy/rest-server/config`
    * Copy `secrets-blueprint.yaml` → `secrets.yaml`
    * Update values inside.
    * *(Optional)* Edit DB name in `rest-server-config.yaml`.
 
 2. **Ingress Config**
 
-   * Go to `deploy/ingress/config`
    * Copy `config-blueprint.env` → `config.env`
    * Update variables inside.
 
@@ -123,7 +122,7 @@ On your **local repo copy**:
 From your **local machine repo folder**:
 
 ```bash
-scp -i '/path/to/sshkeyfile' -r deploy <user>@<server_ip>:~/deploy
+scp -i '/path/to/sshkeyfile' -r deploy <user>@<server_ip>:~/
 ```
 
 ---

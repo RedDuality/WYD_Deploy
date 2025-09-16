@@ -1,0 +1,10 @@
+# rest-server-config.yaml
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rest-server-config
+data:
+  DATABASE_NAME: wyd
+  AUTHENTICATION_ISSUER_URL: https://securetoken.google.com/wydaccounts
+  AUTHENTICATION_AUDIENCE: wydaccounts

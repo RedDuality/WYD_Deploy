@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minio-init-configmap
+data:
+  # The content of your init-minio.sh script
+  init-minio.sh: |
+    #!/bin/sh
+    set -e
+    set -x
+
+    # Wait until MinIO is reachable
+    until mc alias set myminio http://minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; do
+      echo "MinIO is not ready yet - sleeping..."
+      sleep 2
+    done
+
+    # Create buckets
+    mc mb myminio/events --ignore-existing
+    mc mb myminio/profiles --ignore-existing
+
+    # Create app user
+    mc admin user add myminio "$MINIO_APP_USER" "$MINIO_APP_PASSWORD"
+
+    # Create and attach policy
+    mc admin policy create myminio app-policy /init-scripts/policy.json
+    mc admin policy attach myminio app-policy --user "$MINIO_APP_USER"
+
+    echo "✅ MinIO initialization complete."
+
+  # The content of your policy.json file
+  policy.json: |
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:ListBucket",
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::*"
+                ]
+            }
+        ]
+    }
+
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-minio-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: init-minio
+        image: minio/mc
+        env:
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: wyd-credentials
+              key: MINIO_ROOT_USER
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wyd-credentials
+              key: MINIO_ROOT_PASSWORD
+        - name: MINIO_APP_USER
+          valueFrom:
+            secretKeyRef:
+              name: wyd-credentials
+              key: OBJ_STORAGE_USER
+        - name: MINIO_APP_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wyd-credentials
+              key: OBJ_STORAGE_PASSWORD
+        # Command to run the mounted script
+        command: ["/bin/sh", "/init-scripts/init-minio.sh"]
+        volumeMounts:
+        - name: init-scripts-volume
+          mountPath: /init-scripts
+      restartPolicy: OnFailure
+      volumes:
+      - name: init-scripts-volume
+        configMap:
+          name: minio-init-configmap

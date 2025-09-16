@@ -1,0 +1,22 @@
+# minio-values.yaml
+
+mode: standalone
+replicaCount: 1
+
+existingSecret: wyd-credentials
+
+ingress:
+  enabled: false
+consoleIngress:
+  enabled: false
+
+resources:
+  requests:
+    memory: 512Mi
+    cpu: 250m
+  limits:
+    memory: 1Gi
+    cpu: 500m
+
+persistence:
+  size: 20Gi # Adjust the size as needed

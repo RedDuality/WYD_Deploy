@@ -24,13 +24,25 @@ spec:
               value: Production
             - name: ASPNETCORE_URLS
               value: http://+:80
-            - name: GOOGLE_CREDENTIALS
+            # Authentication
+            - name: AUTHENTICATION_ISSUER_URL
               valueFrom:
-                secretKeyRef:
-                  name: wyd-credentials
-                  key: GOOGLE_CREDENTIALS
+                configMapKeyRef:
+                  name: rest-server-config
+                  key: AUTHENTICATION_ISSUER_URL
+            - name: AUTHENTICATION_AUDIENCE
+              valueFrom:
+                configMapKeyRef:
+                  name: rest-server-config
+                  key: AUTHENTICATION_AUDIENCE
+            # MongoDB
             - name: MONGODB_HOSTNAME
               value: mongodb-service
+            - name: DATABASE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: rest-server-config
+                  key: DATABASE_NAME
             - name: MONGODB_APP_USER
               valueFrom:
                 secretKeyRef:
@@ -41,11 +53,21 @@ spec:
                 secretKeyRef:
                   name: wyd-credentials
                   key: MONGODB_APP_PASSWORD
-            - name: DATABASE_NAME
+            # MinIO
+            - name: OBJ_STORAGE_ENDPOINT
+              value: "http://minio:9000"
+            - name: OBJ_STORAGE_PUBLIC_ENDPOINT
+              value: "https://blobs.${DOMAIN_NAME}"  
+            - name: OBJ_STORAGE_USER
               valueFrom:
-                configMapKeyRef:
-                  name: rest-server-config
-                  key: DATABASE_NAME
+                secretKeyRef:
+                  name: wyd-credentials
+                  key: OBJ_STORAGE_USER
+            - name: OBJ_STORAGE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: wyd-credentials
+                  key: OBJ_STORAGE_PASSWORD
 ---
 apiVersion: v1
 kind: Service

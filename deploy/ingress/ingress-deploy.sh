@@ -2,7 +2,10 @@
 set -e
 
 # Load env vars
-export $(grep -v '^#' config/config.env | xargs)
+echo "⏳ Applying secrets and configs..."
+export $(grep -v '^#' ../config/config.env | xargs)
+echo "✅ Secrets and configs applied."
+
 echo "DOMAIN_NAME=${DOMAIN_NAME}"
 echo "PUBLIC_IP=${PUBLIC_IP}"
 echo "LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}"
@@ -34,13 +37,15 @@ done
 envsubst < metallb-config.yaml | kubectl apply -f -
 
 # Deploy NGINX Ingress Controller
+# Note: The "--set controller.config.strict-validate-path-type=false" flag disables a feature that causes an ingress-nginx error
+#       shold not be necessary in cert-manager versions after 1.18.2
 helm upgrade --install ingress-nginx ingress-nginx \
   --repo https://kubernetes.github.io/ingress-nginx \
   --namespace ingress-nginx \
   --create-namespace \
   --set controller.service.type=LoadBalancer \
   --set controller.service.externalTrafficPolicy=Local \
-    --set controller.config.strict-validate-path-type=false \
+  --set controller.config.strict-validate-path-type=false \
   --wait
 
 # Wait for NGINX Ingress Controller deployment to be ready before proceeding
@@ -59,14 +64,12 @@ for i in {1..10}; do
 done
 
 # Install cert-manager
-# Note: The last --set flag disables a feature that causes an ingress-nginx error, shold not be necessary in versions after 1.18.2
 helm upgrade --install cert-manager cert-manager \
   --repo https://charts.jetstack.io \
   --namespace cert-manager \
   --create-namespace \
   --version v1.18.2 \
-  --set installCRDs=true \
-#  --set config.featureGates.ACMEHTTP01IngressPathTypeExact=false
+  --set installCRDs=true
 
 # Wait for cert-manager pods
 kubectl rollout status deployment cert-manager -n cert-manager
@@ -93,7 +96,7 @@ envsubst < cluster-issuer.yaml | kubectl apply -f -
 echo "✅ ClusterIssuer letsencrypt-prod applied."
 
 # Apply Ingress with TLS
-envsubst < rest-server-ingress.yaml | kubectl apply -f -
+envsubst < server-ingress.yaml | kubectl apply -f -
 echo "✅ Ingress applied."
 
 # After applying Ingress

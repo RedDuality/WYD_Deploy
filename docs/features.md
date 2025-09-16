@@ -42,6 +42,48 @@ mongodb://wyd_admin:Test_Password@localhost:27017/admin?authSource=admin
 
 ---
 
+# 📡 Access to MinIO console with Browser
+
+Follow these steps to connect to your **Kubernetes MinIO service**.
+
+---
+
+### 1. Forward the Pod Port on the Server
+
+On the **remote server**, run:
+
+```bash
+kubectl port-forward svc/mongodb-service 9001:9001
+```
+
+➡️ Keep this terminal open while you need the connection.
+
+---
+
+### 2. Create an SSH Tunnel
+
+On your **local machine**, run:
+
+```bash
+ssh -i /path/to/ssh-private-key -L 9001:127.0.0.1:9001 <user>@<server_ip>
+```
+
+➡️ Keep this terminal open as well.
+
+---
+
+### 3. Connect via your Browser
+
+On your local machine, use your favourite browser to connect to:
+
+```text
+http://localhost:9001
+```
+
+Use your minio admin credential to login
+
+---
+
 # 🔄 Updating the Server
 
 To quickly update your server to the latest version of the REST API, simply pull the newest Docker image from Docker Hub.
