@@ -91,11 +91,17 @@ You should see **one node** (your machine).
 
 You need:
 
-* ✅ A working **domain name** of A type
 * ✅ A **valid email** (for Let’s Encrypt SSL)
 * ✅ The **server IP address**
+* ✅ A working **domain name** of A type
+* ✅ On that domain, a corrisponding DNS rule of A type, connecting the domain to the machine IP.
+* ✅ On the same domain, another DNS record of A type colled **blobs** of A type
+![A screenshot of a DNS management panel for mydomain.com, showing two A type DNS records. One record has the name 'mydomain.com' and the other is for a subdomain named 'blobs'. Both records point to the IP address](DNS_records.jpg)
 
-⚠️ Initially, set your domain’s SSL policy to **Flexible** (not Full).
+⚠️ Initially,
+
+   1. set the proxy status of the records to DNS only (not proxied)
+   2. set your domain’s SSL policy to **Flexible** (not Full).
 
 ---
 
