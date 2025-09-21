@@ -35,6 +35,12 @@ spec:
                 configMapKeyRef:
                   name: rest-server-config
                   key: AUTHENTICATION_AUDIENCE
+            # Notification credentials
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              valueFrom:
+                secretKeyRef:
+                  name: wyd-credentials
+                  key: GOOGLE_APPLICATION_CREDENTIALS
             # MongoDB
             - name: MONGODB_HOSTNAME
               value: mongodb-service
