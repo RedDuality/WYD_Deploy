@@ -31,7 +31,7 @@ spec:
         - name: mongodb-container
           image: mongo:latest
           ports:
-            - containerPort: 27017
+            - containerPort: DATABASE_PORT
           env:
             - name: MONGO_INITDB_ROOT_USERNAME
               valueFrom:

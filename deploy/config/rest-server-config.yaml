@@ -6,5 +6,6 @@ metadata:
   name: rest-server-config
 data:
   DATABASE_NAME: wyd
+  DATABASE_PORT: "27017"
   AUTHENTICATION_ISSUER_URL: https://securetoken.google.com/wydaccounts
   AUTHENTICATION_AUDIENCE: wydaccounts

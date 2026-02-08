@@ -44,6 +44,8 @@ spec:
             # MongoDB
             - name: MONGODB_HOSTNAME
               value: mongodb-service
+            - name: MONGODB_PORT
+              value: DATABASE_PORT
             - name: DATABASE_NAME
               valueFrom:
                 configMapKeyRef:
